@@ -25,10 +25,10 @@ struct ContentView: View {
                 return [.melt]
             case .hydro:
                 return [.vape]
-//            case .anemo:
-//                return [.swirl]
-//            case .electro:
-//                return [.elecCharged, .overload]
+            case .anemo:
+                return [.swirl]
+            case .electro:
+                return [.elecCharge, .overload]
             default:
                 return []
             }
@@ -36,9 +36,32 @@ struct ContentView: View {
     }
     
     enum reactions:String, CaseIterable{
+        //MARK: TODO: ADD SHATTER
+        
+        
+        //Amplify
         case vape = "Vaporize"
         case melt = "Melt"
+        
+        //Transformative
+        case swirl = "Swirl"
+        case elecCharge = "Electro Charged"
+        case overload = "Overload"
+        
+        //Etc.
         case none = "None"
+        
+        var isAmplifying:Bool{
+            switch self {
+            case .vape, .melt:
+                return true
+            case .elecCharge, .overload, .swirl:
+                return false
+            default:
+                return false
+            }
+        }
+        
     }
     
     //Element
@@ -55,11 +78,13 @@ struct ContentView: View {
     //Enemy Stats
     @State private var enemyLevel:String = "1"
     @State private var resistance:String = "0"
+    @State private var defShred:String = "0"
     
     //Reactions
     @State private var willReaction:Bool = false
     @State private var EMValue:String = "0"
     @State private var reaction:reactions = .none
+    @State private var reactionBonus:String = "0"
     
     //Final Values
     @State private var rawCharaDamage:Int = 0{
@@ -72,15 +97,19 @@ struct ContentView: View {
             self.finalDamage = self.calculateTotalDamage()
         }
     }
+    @State private var enemyResMultiplier:Float = 0
     @State private var reactionMultiplier:Float = 0{
         didSet{
             self.finalDamage = self.calculateTotalDamage()
         }
     }
     
-    @State private var finalDamage:Int = 0
+    @State private var finalDamage:Float = 0
     
     var body: some View {
+        //MARK: TODO: ADD SAVE STATUS AND LOAD STATUS
+        
+        
         NavigationView{
             Form{
                 Section(header:Text("Element")){
@@ -180,7 +209,7 @@ struct ContentView: View {
                             HStack{
                                 Text("Resistance(%):")
                                 TextField(self.resistance, text: $resistance)
-                                .keyboardType(.decimalPad)
+                                    .keyboardType(.numbersAndPunctuation)
                                     .onChange(of: resistance, perform: { _ in
                                         self.calculateValue()
                                     })
@@ -190,23 +219,23 @@ struct ContentView: View {
                                 .foregroundColor(.secondary)
                         }
                         
+                        HStack{
+                            Text("Defense Shred:")
+                            TextField(self.defShred, text: $defShred)
+                                .keyboardType(.decimalPad)
+                                .onChange(of: enemyLevel, perform: { _ in
+                                    self.calculateValue()
+                                })
+                        }
+                        
                         Text("Incoming Damage: \(self.incomingDamage)").padding(.vertical)
                     }
                     
-                    if element == .pyro || element == .cryo || element == .hydro{
+                    if (element != .none && element != .geo){
                         Section(header:Text("Reactions")){
                             Toggle("Calculate Reactions?", isOn: $willReaction)
                             
                             if willReaction{
-                                HStack{
-                                    Text("Elemental Mastery:")
-                                    TextField(self.EMValue, text: $EMValue)
-                                    .keyboardType(.decimalPad)
-                                    .onChange(of: EMValue, perform: { _ in
-                                        self.calculateReactionMultiplier()
-                                    })
-                                }
-                                
                                 Picker(selection: $reaction, label: Text("Reaction:"), content: {
                                     ForEach(self.element.possibleReactions, id: \.self){ aReaction in
                                         Text(aReaction.rawValue)
@@ -215,22 +244,56 @@ struct ContentView: View {
                                     self.calculateValue()
                                 })
                                 
-                                Text("Reaction Multiplier: \(self.reactionMultiplier)").padding(.vertical)
+                                HStack{
+                                    Text("Elemental Mastery:")
+                                    TextField(self.EMValue, text: $EMValue)
+                                    .keyboardType(.decimalPad)
+                                    .onChange(of: EMValue, perform: { _ in
+                                        self.calculateValue()
+                                    })
+                                }
                                 
+                                HStack{
+                                    Text("Reaction Bonus:")
+                                    TextField(self.reactionBonus, text: $reactionBonus)
+                                        .keyboardType(.decimalPad)
+                                        .onChange(of: EMValue, perform: { _ in
+                                            self.calculateValue()
+                                        })
+                                }
+            
+                                if self.reaction.isAmplifying{
+                                    Text("Reaction Multiplier: \(self.reactionMultiplier, specifier: "%.2f")").padding(.vertical)
+                                }else{
+                                    Text("\(self.reaction.rawValue) Damage: \(self.reactionMultiplier, specifier: "%.2f")").padding(.vertical)
+                                }
                             }
                         }
                     }
                 }
                 
                 if element != .none{
-                    Section(header:Text("Total Damage")){
-                        VStack(alignment:.leading){
-                            Text("Total Damage: \(self.finalDamage)")
-                            Text("This damage might differ as this is just a simple calculator")
-                                .font(.footnote)
-                                .foregroundColor(.secondary)
-                        }.padding(.vertical)
-                        
+                    if self.reaction.isAmplifying{
+                        Section(header:Text("Total Damage")){
+                            VStack(alignment:.leading){
+                                Text("Total Damage: \(self.finalDamage)")
+                                Text("This damage might differ as this is just a simple calculator")
+                                    .font(.footnote)
+                                    .foregroundColor(.secondary)
+                            }.padding(.vertical)
+                            
+                        }
+                    }else{
+                        Section(header:Text("Total Damage")){
+                            VStack(alignment:.leading){
+                                Text("Total Damage: \(self.incomingDamage, specifier: "%.2f")")
+                                Text("This damage might differ as this is just a simple calculator")
+                                    .font(.footnote)
+                                    .foregroundColor(.secondary)
+                            }.padding(.vertical)
+                            
+                        }
+
                     }
                 }
                 
@@ -282,6 +345,8 @@ struct ContentView: View {
         }
         
         incomingDamage = Float(self.rawCharaDamage) * defMulti * resMulti
+        
+        self.enemyResMultiplier = resMulti
         self.incomingDamage = Int(incomingDamage)
         
         //MARK: TODO - DEFENSE MODIFIERS AND SHRED
@@ -289,24 +354,38 @@ struct ContentView: View {
     
     func calculateReactionMultiplier(){
         //MARK: TODO - TRANSFORMATIVE REACTIONS
+        if self.reaction != .none{
+            let baseReactionMulti = returnBaseMulti(element: self.element, reaction: self.reaction)
+            
+            if self.reaction.isAmplifying{
+                var reactionAmplifyValue:Float = 0 // baseReactionMulti * (1 + %EMAmpValue + %reactionBonus)
+                
+                let EMStatValue = (Float(self.EMValue) ?? 0)
+                let EMAmpValue = 2.78 * ((EMStatValue)/(EMStatValue + 1400))
+                //        reactionAmplifyValue = baseReactionMulti * (1 + EMAmpValue + reactionBonusValue)
+                reactionAmplifyValue = baseReactionMulti * (1 + EMAmpValue)
+                self.reactionMultiplier = reactionAmplifyValue
+            }else{
+                var transformativeDamage:Float = 0
+                let charaLevelValue = Float(self.myLevel) ?? 0
+                let EMValue = Int(self.EMValue) ?? 0 > 0 ? Float(self.EMValue) ?? 1 : 1
+                
+                let EMTransformative:Float = (16 * (EMValue / (EMValue + 2000)))/100
+                
+                transformativeDamage = baseReactionMulti * charaLevelValue * (1 + EMTransformative)
+    //            transformativeDamage = baseReactionMulti * charaLevelValue * (1 + EMTransformative + bonusReaction)
+                let incomingTransformative:Float = transformativeDamage * self.enemyResMultiplier
+                self.reactionMultiplier = Float(incomingTransformative.rounded())
+            }
+        }
         
-        //Amplifying Reactions
-        let baseReactionMulti = returnBaseMulti(element: self.element, reaction: self.reaction)
-        var reactionAmplifyValue:Float = 0 // baseReactionMulti * (1 + %EMAmpValue + %reactionBonus)
-        
-        let EMStatValue = (Float(self.EMValue) ?? 0)
-        let EMAmpValue = 2.78 * ((EMStatValue)/(EMStatValue + 1400))
-        
-//        reactionAmplifyValue = baseReactionMulti * (1 + EMAmpValue + reactionBonusValue)
-        reactionAmplifyValue = baseReactionMulti * (1 + EMAmpValue)
-        self.reactionMultiplier = reactionAmplifyValue
     }
     
-    func calculateTotalDamage()->Int{
+    func calculateTotalDamage()->Float{
         if reactionMultiplier == 0{
-            return self.incomingDamage
+            return Float(self.incomingDamage).rounded()
         }
-        return Int(Float(self.incomingDamage) * self.reactionMultiplier)
+        return (Float(self.incomingDamage) * self.reactionMultiplier).rounded()
     }
     
     func initValues(){
@@ -329,6 +408,15 @@ struct ContentView: View {
             }else if element == .pyro{
                 return 1.5
             }
+        case .swirl:
+            return 1.2
+            
+        case .elecCharge:
+            return 2.4
+            
+        case .overload:
+            return 4
+            
         default:
             return 0
         }
@@ -336,9 +424,10 @@ struct ContentView: View {
     }
     
     func resetReactionValues(){
-        if self.element != .hydro || self.element != .cryo || self.element != .pyro{
+        if self.element == .none || self.element == .geo{
             self.willReaction = false
             self.EMValue = "0"
+            self.reactionBonus = "0"
             self.reaction = .none
         }
     }
