@@ -20,15 +20,17 @@ struct ContentView: View {
         var possibleReactions:[reactions]{
             switch self {
             case .pyro:
-                return [.vape,.melt]
+                return [.vape,.melt,.shatter]
             case .cryo:
-                return [.melt]
+                return [.melt,.shatter]
             case .hydro:
-                return [.vape]
+                return [.vape,.shatter]
             case .anemo:
-                return [.swirl]
+                return [.swirl,.shatter]
             case .electro:
-                return [.elecCharge, .overload]
+                return [.elecCharge, .overload,.shatter]
+            case .geo:
+                return [.shatter]
             default:
                 return []
             }
@@ -36,9 +38,6 @@ struct ContentView: View {
     }
     
     enum reactions:String, CaseIterable{
-        //MARK: TODO: ADD SHATTER
-        
-        
         //Amplify
         case vape = "Vaporize"
         case melt = "Melt"
@@ -47,7 +46,7 @@ struct ContentView: View {
         case swirl = "Swirl"
         case elecCharge = "Electro Charged"
         case overload = "Overload"
-        
+        case shatter = "Shatter"
         //Etc.
         case none = "None"
         
@@ -55,7 +54,7 @@ struct ContentView: View {
             switch self {
             case .vape, .melt:
                 return true
-            case .elecCharge, .overload, .swirl:
+            case .elecCharge, .overload, .swirl, .shatter:
                 return false
             default:
                 return false
@@ -72,7 +71,7 @@ struct ContentView: View {
     @State private var attack:String = "1000"
     @State private var multiplier:String = "300"
     @State private var cDamage:String = "50"
-//    @State private var cRate:String = "5"
+    @State private var cRate:String = "5"
     @State private var eDamageBonus:String = "0"
     
     //Enemy Stats
@@ -104,12 +103,12 @@ struct ContentView: View {
         }
     }
     
+    @State private var averageDamage:Float = 0
+    
     @State private var finalDamage:Float = 0
+    @State private var averageFinalDamage:Float = 0
     
     var body: some View {
-        //MARK: TODO: ADD SAVE STATUS AND LOAD STATUS
-        
-        
         NavigationView{
             Form{
                 Section(header:Text("Element")){
@@ -170,13 +169,14 @@ struct ContentView: View {
                             })
                         }
                         
-//                        HStack{
-//                            Text("C.Rate Value(%):")
-//                            TextField(self.cRate, text: $cRate) { _ in
-//                                self.calculateRawCharaDamage()
-//                            }
-//                            .keyboardType(.decimalPad)
-//                        }
+                        HStack{
+                            Text("C.Rate Value(%):")
+                            TextField(self.cRate, text: $cRate) { _ in
+                                self.calculateRawCharaDamage()
+                            }
+                            .keyboardType(.decimalPad)
+                        }
+                        
                         VStack(alignment:.leading){
                             HStack{
                                 Text("Damage Bonus(%):")
@@ -220,7 +220,7 @@ struct ContentView: View {
                         }
                         
                         HStack{
-                            Text("Defense Shred:")
+                            Text("Defense Shred(%):")
                             TextField(self.defShred, text: $defShred)
                                 .keyboardType(.decimalPad)
                                 .onChange(of: enemyLevel, perform: { _ in
@@ -231,7 +231,7 @@ struct ContentView: View {
                         Text("Incoming Damage: \(self.incomingDamage)").padding(.vertical)
                     }
                     
-                    if (element != .none && element != .geo){
+                    if (element != .none){
                         Section(header:Text("Reactions")){
                             Toggle("Calculate Reactions?", isOn: $willReaction)
                             
@@ -254,7 +254,7 @@ struct ContentView: View {
                                 }
                                 
                                 HStack{
-                                    Text("Reaction Bonus:")
+                                    Text("Reaction Bonus(%):")
                                     TextField(self.reactionBonus, text: $reactionBonus)
                                         .keyboardType(.decimalPad)
                                         .onChange(of: EMValue, perform: { _ in
@@ -276,7 +276,7 @@ struct ContentView: View {
                     if self.reaction.isAmplifying{
                         Section(header:Text("Total Damage")){
                             VStack(alignment:.leading){
-                                Text("Total Damage: \(self.finalDamage)")
+                                Text("Total Damage: \(self.finalDamage, specifier: "%.2f")")
                                 Text("This damage might differ as this is just a simple calculator")
                                     .font(.footnote)
                                     .foregroundColor(.secondary)
@@ -317,10 +317,10 @@ struct ContentView: View {
         let atkValue = Float(self.attack) ?? 0
         let multiplierValue = (Float(self.multiplier) ?? 0) / 100
         let cDamage = (Float(self.cDamage) ?? 0) / 100
-//        let cRate = Int (self.cRate)
+        let cRate = (Float(self.cRate) ?? 0) / 100
         let eBonus = (Float(self.eDamageBonus) ?? 0) / 100
         
-        outgoingDamage = (atkValue * multiplierValue * (1 + eBonus)) * (1 + cDamage)
+        outgoingDamage = (atkValue * multiplierValue * (1 + eBonus)) * (1 + (cRate * cDamage))
         
         self.rawCharaDamage = Int(outgoingDamage)
     }
@@ -331,8 +331,9 @@ struct ContentView: View {
         let levelValue = Float(self.myLevel) ?? 0
         let enemyLevelValue = Float (self.enemyLevel) ?? 0
         let enemyResValue = (Float (self.resistance) ?? 0) / 100
+        let defShredValue = (Float (self.defShred) ?? 0) / 100
         
-        let defMulti = (levelValue + 100)/(levelValue + enemyLevelValue + 200)
+        let defMulti = (levelValue + 100)/(((1 - defShredValue) * (enemyLevelValue + 100)) + (levelValue + 100))
         var resMulti:Float = 0
         
         //Resistance Modifier
@@ -349,11 +350,9 @@ struct ContentView: View {
         self.enemyResMultiplier = resMulti
         self.incomingDamage = Int(incomingDamage)
         
-        //MARK: TODO - DEFENSE MODIFIERS AND SHRED
     }
     
     func calculateReactionMultiplier(){
-        //MARK: TODO - TRANSFORMATIVE REACTIONS
         if self.reaction != .none{
             let baseReactionMulti = returnBaseMulti(element: self.element, reaction: self.reaction)
             
@@ -362,18 +361,17 @@ struct ContentView: View {
                 
                 let EMStatValue = (Float(self.EMValue) ?? 0)
                 let EMAmpValue = 2.78 * ((EMStatValue)/(EMStatValue + 1400))
-                //        reactionAmplifyValue = baseReactionMulti * (1 + EMAmpValue + reactionBonusValue)
-                reactionAmplifyValue = baseReactionMulti * (1 + EMAmpValue)
+                let reactionBonusValue = (Float(self.reactionBonus) ?? 0) / 100
+                reactionAmplifyValue = baseReactionMulti * (1 + EMAmpValue + reactionBonusValue)
                 self.reactionMultiplier = reactionAmplifyValue
             }else{
                 var transformativeDamage:Float = 0
-                let charaLevelValue = Float(self.myLevel) ?? 0
+                let charaLevelValue = (Float(self.myLevel) ?? 1)
                 let EMValue = Int(self.EMValue) ?? 0 > 0 ? Float(self.EMValue) ?? 1 : 1
                 
                 let EMTransformative:Float = (16 * (EMValue / (EMValue + 2000)))/100
-                
-                transformativeDamage = baseReactionMulti * charaLevelValue * (1 + EMTransformative)
-    //            transformativeDamage = baseReactionMulti * charaLevelValue * (1 + EMTransformative + bonusReaction)
+                let reactionBonusValue = (Float(self.reactionBonus) ?? 0) / 100
+                transformativeDamage = baseReactionMulti * charaLevelValue * (1 + EMTransformative + reactionBonusValue)
                 let incomingTransformative:Float = transformativeDamage * self.enemyResMultiplier
                 self.reactionMultiplier = Float(incomingTransformative.rounded())
             }
@@ -389,9 +387,7 @@ struct ContentView: View {
     }
     
     func initValues(){
-        self.calculateRawCharaDamage()
-        self.calculateIncomingDamage()
-        self.calculateReactionMultiplier()
+        self.calculateValue()
     }
     
     func returnBaseMulti(element:elements, reaction:reactions) -> Float{
@@ -404,9 +400,9 @@ struct ContentView: View {
             }
         case .melt:
             if element == .cryo{
-                return 2
-            }else if element == .pyro{
                 return 1.5
+            }else if element == .pyro{
+                return 2
             }
         case .swirl:
             return 1.2
@@ -416,6 +412,9 @@ struct ContentView: View {
             
         case .overload:
             return 4
+            
+        case .shatter:
+            return 3
             
         default:
             return 0
