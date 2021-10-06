@@ -191,8 +191,12 @@ struct ContentView: View {
                                 .foregroundColor(.secondary)
                         }
                         
-                        Text("Raw Chara Damage: \(self.rawCharaDamage)")
-                            .padding(.vertical)
+                        VStack(alignment:.leading){
+                            Text("Raw Chara Damage: \(self.rawCharaDamage)")
+                                .padding(.bottom, 4)
+                            Text("Average Chara Damage: \(Int(self.averageDamage))")
+                        }
+                        .padding(.vertical)
                     }
                     
                     Section(header:Text("Enemy Status")){
@@ -276,7 +280,9 @@ struct ContentView: View {
                     if self.reaction.isAmplifying{
                         Section(header:Text("Total Damage")){
                             VStack(alignment:.leading){
-                                Text("Total Damage: \(self.finalDamage, specifier: "%.2f")")
+                                Text("Total Damage: \(Int(self.finalDamage))")
+                                    .padding(.bottom, 4)
+                                Text("Average Damage: \(Int(self.averageFinalDamage))")
                                 Text("This damage might differ as this is just a simple calculator")
                                     .font(.footnote)
                                     .foregroundColor(.secondary)
@@ -286,7 +292,9 @@ struct ContentView: View {
                     }else{
                         Section(header:Text("Total Damage")){
                             VStack(alignment:.leading){
-                                Text("Total Damage: \(self.incomingDamage, specifier: "%.2f")")
+                                Text("Total Damage: \(Int(self.incomingDamage))")
+                                    .padding(.bottom, 4)
+                                Text("Average Damage: \(Int(self.averageFinalDamage))")
                                 Text("This damage might differ as this is just a simple calculator")
                                     .font(.footnote)
                                     .foregroundColor(.secondary)
@@ -302,6 +310,9 @@ struct ContentView: View {
             .onAppear(perform: {
                 self.initValues()
             })
+            .navigationBarItems(trailing: Button("Reset Values", action: {
+                self.resetValues()
+            }))
         }
     }
     
@@ -429,6 +440,28 @@ struct ContentView: View {
             self.reactionBonus = "0"
             self.reaction = .none
         }
+    }
+    
+    func resetValues(){
+        self.element = .none
+        
+        self.myLevel = "1"
+        self.attack = "1000"
+        self.multiplier = "300"
+        self.cDamage = "50"
+        self.cRate = "5"
+        self.eDamageBonus = "0"
+        
+        self.enemyLevel = "1"
+        self.resistance = "0"
+        self.defShred = "0"
+        
+        self.willReaction = false
+        self.EMValue = "0"
+        self.reaction = .none
+        self.reactionBonus = "0"
+        
+        self.initValues()
     }
 }
 
