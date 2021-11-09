@@ -89,24 +89,38 @@ struct ContentView: View {
     @State private var rawCharaDamage:Int = 0{
         didSet{
             self.finalDamage = self.calculateTotalDamage()
+            self.averageFinalDamage = self.calculateAverageTotalDamage()
         }
     }
     @State private var incomingDamage:Int = 0{
         didSet{
             self.finalDamage = self.calculateTotalDamage()
+            self.averageFinalDamage = self.calculateAverageTotalDamage()
         }
     }
     @State private var enemyResMultiplier:Float = 0
     @State private var reactionMultiplier:Float = 0{
         didSet{
             self.finalDamage = self.calculateTotalDamage()
+            self.averageFinalDamage = self.calculateAverageTotalDamage()
         }
     }
     
     @State private var averageDamage:Float = 0
-    
+    @State private var averageIncomingDamage:Float = 0
     @State private var finalDamage:Float = 0
     @State private var averageFinalDamage:Float = 0
+    
+    //Comparison Stuffs
+    @Binding var compareDamage:Float
+    @Binding var compareAvgDamage:Float
+    @Environment (\.presentationMode) var presentationMode
+    @State private var totalDifference:Float = 0
+    @State private var averageDifference:Float = 0
+    @State private var percentTotalDifference:Float = 0
+    @State private var percentAverageDifference:Float = 0
+    
+    @State private var showingComparisonScreen:Bool = false
     
     var body: some View {
         NavigationView{
@@ -171,10 +185,11 @@ struct ContentView: View {
                         
                         HStack{
                             Text("C.Rate Value(%):")
-                            TextField(self.cRate, text: $cRate) { _ in
-                                self.calculateRawCharaDamage()
-                            }
-                            .keyboardType(.decimalPad)
+                            TextField(self.cRate, text: $cRate)
+                                .keyboardType(.decimalPad)
+                                .onChange(of: cRate, perform: { _ in
+                                    self.calculateValue()
+                                })
                         }
                         
                         VStack(alignment:.leading){
@@ -305,6 +320,52 @@ struct ContentView: View {
                     }
                 }
                 
+                if self.element != .none && (self.compareDamage < 0 && self.compareAvgDamage < 0){
+                    
+                    Button("Compare with other stat", action: {
+                        self.showingComparisonScreen = true
+                    }).sheet(isPresented: $showingComparisonScreen, content: {
+                        ContentView(compareDamage: $finalDamage, compareAvgDamage: $averageFinalDamage)
+                    })
+                    
+                    
+                }else if (self.compareDamage >= 0 && self.compareAvgDamage >= 0){
+                    
+                    
+                    if self.element != .none{
+                        Section(header:Text("Comparison")){
+                            VStack(alignment:.leading){
+                                VStack(alignment:.leading){
+                                    Text("Total Damage Difference: \(self.totalDifference, specifier:"%.0f"), (\(self.percentTotalDifference, specifier: "%.0f"))% difference from first status")
+                                        .font(.body)
+                                    
+                                    Text("Difference from \(self.compareDamage, specifier: "%.2f") to \(self.finalDamage, specifier: "%.2f")")
+                                        .font(.footnote)
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                Spacer()
+                                
+                                VStack(alignment:.leading){
+                                    Text("Total Damage Difference: \(self.averageDifference, specifier:"%.0f"), (\(self.percentAverageDifference, specifier: "%.0f"))% difference from first status")
+                                        .font(.body)
+                                    
+                                    Text("Difference from \(self.compareAvgDamage, specifier: "%.2f") to \(self.averageFinalDamage, specifier: "%.2f")")
+                                        .font(.footnote)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            .padding(.vertical)
+                        }
+                    }
+                    
+                    Button {
+                        self.presentationMode.wrappedValue.dismiss()
+                    } label: {
+                        Text("Return")
+                    }
+                }
+                
             }
             .navigationBarTitle("Simple Damage Calc")
             .onAppear(perform: {
@@ -320,10 +381,15 @@ struct ContentView: View {
         self.calculateRawCharaDamage()
         self.calculateIncomingDamage()
         self.calculateReactionMultiplier()
+        
+        if self.compareDamage >= 0 && self.compareAvgDamage >= 0{
+            self.calculateComparissonDamage()
+        }
     }
     
     func calculateRawCharaDamage(){
         var outgoingDamage:Float = 0 // (ATK total * %Motion Value * (1 + %Damage Bonus)) * (1 + %C Damage)
+        var avgOutgoingDamage:Float = 0
         
         let atkValue = Float(self.attack) ?? 0
         let multiplierValue = (Float(self.multiplier) ?? 0) / 100
@@ -331,13 +397,16 @@ struct ContentView: View {
         let cRate = (Float(self.cRate) ?? 0) / 100
         let eBonus = (Float(self.eDamageBonus) ?? 0) / 100
         
-        outgoingDamage = (atkValue * multiplierValue * (1 + eBonus)) * (1 + (cRate * cDamage))
+        outgoingDamage = (atkValue * multiplierValue * (1 + eBonus)) * (1 + cDamage)
+        avgOutgoingDamage = (atkValue * multiplierValue * (1 + eBonus)) * (1 + (cRate * cDamage))
         
+        self.averageDamage = avgOutgoingDamage
         self.rawCharaDamage = Int(outgoingDamage)
     }
     
     func calculateIncomingDamage(){
         var incomingDamage:Float = 0 //rawCharaDamage * defMulti * resMulti
+        var avgIncomingDamage:Float = 0
         
         let levelValue = Float(self.myLevel) ?? 0
         let enemyLevelValue = Float (self.enemyLevel) ?? 0
@@ -357,8 +426,10 @@ struct ContentView: View {
         }
         
         incomingDamage = Float(self.rawCharaDamage) * defMulti * resMulti
+        avgIncomingDamage = self.averageDamage * defMulti * resMulti
         
         self.enemyResMultiplier = resMulti
+        self.averageIncomingDamage = avgIncomingDamage
         self.incomingDamage = Int(incomingDamage)
         
     }
@@ -395,6 +466,25 @@ struct ContentView: View {
             return Float(self.incomingDamage).rounded()
         }
         return (Float(self.incomingDamage) * self.reactionMultiplier).rounded()
+    }
+    
+    func calculateAverageTotalDamage()->Float{
+        if reactionMultiplier == 0{
+            return Float(self.averageIncomingDamage).rounded()
+        }
+        return (Float(self.averageIncomingDamage) * self.reactionMultiplier).rounded()
+    }
+    
+    func calculateComparissonDamage(){
+        let averageTotalDiff:Float = self.averageFinalDamage - self.compareAvgDamage
+        let totalDiff:Float = self.finalDamage - self.compareDamage
+        self.averageDifference = averageTotalDiff
+        self.totalDifference = totalDiff
+        
+        let perAverageTotalDiff:Float = (averageTotalDiff/self.compareAvgDamage) * 100
+        let perTotalDiff:Float = (totalDiff/self.compareDamage) * 100
+        self.percentTotalDifference = perTotalDiff
+        self.percentAverageDifference = perAverageTotalDiff
     }
     
     func initValues(){
@@ -467,6 +557,6 @@ struct ContentView: View {
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView()
+        ContentView(compareDamage: Binding.constant(-1), compareAvgDamage: Binding.constant(-1))
     }
 }
