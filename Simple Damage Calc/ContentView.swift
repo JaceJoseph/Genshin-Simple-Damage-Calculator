@@ -7,6 +7,91 @@
 
 import SwiftUI
 
+struct CalculatorView:View{
+    @State private var baseAttack:String = ""
+    @State private var bonusAttackPercent:String = ""
+    @State private var bonusAttackFlat:String = ""
+    @State private var totalAtk:Int = 0
+    
+    @Environment (\.presentationMode) var presentationMode
+    
+    var body: some View{
+        Form{
+            Section(header:Text("Calculation")){
+                VStack(alignment:.leading){
+                    HStack{
+                        Text("Base Attack: ")
+                        TextField(self.baseAttack, text: $baseAttack)
+                            .keyboardType(.decimalPad)
+                            .onChange(of: self.baseAttack, perform: { _ in
+                                self.calculateTotalAtk()
+                            })
+                    }
+                    Text("Base attack is the white number on the attributes section on Attack stat")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.leading)
+                }.padding(.vertical)
+                
+                VStack(alignment:.leading){
+                    HStack{
+                        Text("%Atk Bonus: ")
+                        TextField(self.bonusAttackPercent, text: $bonusAttackPercent)
+                            .keyboardType(.decimalPad)
+                            .onChange(of: self.bonusAttackPercent, perform: { _ in
+                                self.calculateTotalAtk()
+                            })
+                    }
+                    Text("Total up all +atk% stats, main and substats")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.leading)
+                }.padding(.vertical)
+                
+                VStack(alignment:.leading){
+                    HStack{
+                        Text("Flat Atk Bonus: ")
+                        TextField(self.bonusAttackFlat, text: $bonusAttackFlat)
+                            .keyboardType(.decimalPad)
+                            .onChange(of: self.bonusAttackFlat, perform: { _ in
+                                self.calculateTotalAtk()
+                            })
+                    }
+                    Text("Total up all +atk stats, main stats from plume and substats")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.leading)
+                }.padding(.vertical)
+            }
+            
+            Section(header:Text("Total After Calculation")){
+                Text("Total Attack: \(totalAtk)")
+            }
+        
+            Button {
+                self.copyAndDismiss()
+            } label: {
+                Text("Copy Total Attack and Dismiss")
+            }
+
+        }
+    }
+    
+    func calculateTotalAtk(){
+        let baseAtkValue:Float = Float(self.baseAttack) ?? 0
+        let flatAtkValue:Float = Float(self.bonusAttackFlat) ?? 0
+        let percentAtkValue:Float = Float(self.bonusAttackPercent) ?? 0
+        
+        let totalAtkValue = (baseAtkValue * ((100 + percentAtkValue) / 100)) + flatAtkValue
+        self.totalAtk = Int(totalAtkValue)
+    }
+    
+    func copyAndDismiss(){
+        UIPasteboard.general.string = String(self.totalAtk)
+        self.presentationMode.wrappedValue.dismiss()
+    }
+}
+
 struct ContentView: View {
     enum elements:String, CaseIterable{
         case none = "None"
@@ -120,7 +205,10 @@ struct ContentView: View {
     @State private var percentTotalDifference:Float = 0
     @State private var percentAverageDifference:Float = 0
     
-    @State private var showingComparisonScreen:Bool = false
+    //Calculator Stuffs
+    @State private var shouldShowCalculator:Bool = false
+    
+    @State private var shouldShowComparisonScreen:Bool = false
     
     var body: some View {
         NavigationView{
@@ -154,6 +242,17 @@ struct ContentView: View {
                                 .onChange(of: attack, perform: { _ in
                                     self.calculateValue()
                                 })
+                                
+                                Spacer()
+                                
+                                Button {
+                                    self.shouldShowCalculator = true
+                                } label: {
+                                    Text("Calc Atk")
+                                }.sheet(isPresented: $shouldShowCalculator, content: {
+                                    CalculatorView()
+                                })
+
                             }
                             Text("This is the flat final attack value, add in attack buffs to the total if any is used")
                                 .font(.footnote)
@@ -323,8 +422,8 @@ struct ContentView: View {
                 if self.element != .none && (self.compareDamage < 0 && self.compareAvgDamage < 0){
                     
                     Button("Compare with other stat", action: {
-                        self.showingComparisonScreen = true
-                    }).sheet(isPresented: $showingComparisonScreen, content: {
+                        self.shouldShowComparisonScreen = true
+                    }).sheet(isPresented: $shouldShowComparisonScreen, content: {
                         ContentView(compareDamage: $finalDamage, compareAvgDamage: $averageFinalDamage)
                     })
                     
@@ -558,5 +657,6 @@ struct ContentView: View {
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView(compareDamage: Binding.constant(-1), compareAvgDamage: Binding.constant(-1))
+        CalculatorView()
     }
 }
