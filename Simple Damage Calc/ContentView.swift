@@ -436,9 +436,8 @@ struct ContentView: View {
                             VStack(alignment:.leading){
                                 VStack(alignment:.leading){
                                     Text("Total Damage Difference: \(self.totalDifference, specifier:"%.0f"), (\(self.percentTotalDifference, specifier: "%.0f"))% difference from first status")
-                                        .font(.body)
                                     
-                                    Text("Difference from \(self.compareDamage, specifier: "%.2f") to \(self.finalDamage, specifier: "%.2f")")
+                                    Text("Difference from \(self.compareDamage, specifier: "%.0f") to \(self.finalDamage, specifier: "%.0f")")
                                         .font(.footnote)
                                         .foregroundColor(.secondary)
                                 }
@@ -447,9 +446,8 @@ struct ContentView: View {
                                 
                                 VStack(alignment:.leading){
                                     Text("Total Damage Difference: \(self.averageDifference, specifier:"%.0f"), (\(self.percentAverageDifference, specifier: "%.0f"))% difference from first status")
-                                        .font(.body)
                                     
-                                    Text("Difference from \(self.compareAvgDamage, specifier: "%.2f") to \(self.averageFinalDamage, specifier: "%.2f")")
+                                    Text("Difference from \(self.compareAvgDamage, specifier: "%.0f") to \(self.averageFinalDamage, specifier: "%.0f")")
                                         .font(.footnote)
                                         .foregroundColor(.secondary)
                                 }

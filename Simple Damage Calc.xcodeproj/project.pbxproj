@@ -11,6 +11,8 @@
 		708FBB6427056E030099BBAD /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 708FBB6327056E030099BBAD /* ContentView.swift */; };
 		708FBB6627056E070099BBAD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 708FBB6527056E070099BBAD /* Assets.xcassets */; };
 		708FBB6927056E070099BBAD /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 708FBB6827056E070099BBAD /* Preview Assets.xcassets */; };
+		70C1161827477F9000CC0BB2 /* PrimogemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70C1161727477F8F00CC0BB2 /* PrimogemView.swift */; };
+		70C1161A27477FA500CC0BB2 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70C1161927477FA500CC0BB2 /* MainView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -20,6 +22,8 @@
 		708FBB6527056E070099BBAD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		708FBB6827056E070099BBAD /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		708FBB6A27056E070099BBAD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		70C1161727477F8F00CC0BB2 /* PrimogemView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PrimogemView.swift; sourceTree = "<group>"; };
+		70C1161927477FA500CC0BB2 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -53,7 +57,9 @@
 			isa = PBXGroup;
 			children = (
 				708FBB6127056E030099BBAD /* Simple_Damage_CalcApp.swift */,
+				70C1161927477FA500CC0BB2 /* MainView.swift */,
 				708FBB6327056E030099BBAD /* ContentView.swift */,
+				70C1161727477F8F00CC0BB2 /* PrimogemView.swift */,
 				708FBB6527056E070099BBAD /* Assets.xcassets */,
 				708FBB6A27056E070099BBAD /* Info.plist */,
 				708FBB6727056E070099BBAD /* Preview Content */,
@@ -139,6 +145,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				708FBB6427056E030099BBAD /* ContentView.swift in Sources */,
+				70C1161A27477FA500CC0BB2 /* MainView.swift in Sources */,
+				70C1161827477F9000CC0BB2 /* PrimogemView.swift in Sources */,
 				708FBB6227056E030099BBAD /* Simple_Damage_CalcApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -11,7 +11,7 @@ import SwiftUI
 struct Simple_Damage_CalcApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView(compareDamage: Binding.constant(-1), compareAvgDamage: Binding.constant(-1))
+            MainView()
         }
     }
 }
