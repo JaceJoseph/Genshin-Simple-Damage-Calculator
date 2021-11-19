@@ -8,10 +8,15 @@
 import SwiftUI
 
 struct CalculatorView:View{
-    @State private var baseAttack:String = ""
-    @State private var bonusAttackPercent:String = ""
-    @State private var bonusAttackFlat:String = ""
+    @State private var baseAttack:String = "1000"
+    @State private var bonusAttackPercent:String = "0"
+    @State private var bonusAttackFlat:String = "0"
     @State private var totalAtk:Int = 0
+    
+    @State private var conversionRate:String = "0"
+    @State private var conversionSource:String = "0"
+    @State private var conversionTotal:Int = 0
+    @State private var shouldConversion:Bool = false
     
     @Environment (\.presentationMode) var presentationMode
     
@@ -64,6 +69,36 @@ struct CalculatorView:View{
                 }.padding(.vertical)
             }
             
+            Section(header:Text("Attack Conversion")){
+                Toggle(isOn: self.$shouldConversion) {
+                    Text("Does your attack increase from a conversion from other stats?")
+                }
+                .padding(.vertical)
+                    
+                if self.shouldConversion{
+                    HStack{
+                        Text("Conversion Rate(%): ")
+                        TextField(self.conversionRate, text: self.$conversionRate)
+                            .keyboardType(.decimalPad)
+                            .onChange(of: self.conversionRate, perform: { _ in
+                                self.calculateTotalAtk()
+                            })
+                    }
+                    
+                    HStack{
+                        Text("Conversion Source: ")
+                        TextField(self.conversionSource, text: $conversionSource)
+                            .keyboardType(.decimalPad)
+                            .onChange(of: self.conversionSource, perform: { _ in
+                                self.calculateTotalAtk()
+                            })
+                    }
+                    
+                    Text("Conversion Total: \(conversionTotal)")
+                }
+                
+            }
+            
             Section(header:Text("Total After Calculation")){
                 Text("Total Attack: \(totalAtk)")
             }
@@ -81,8 +116,13 @@ struct CalculatorView:View{
         let baseAtkValue:Float = Float(self.baseAttack) ?? 0
         let flatAtkValue:Float = Float(self.bonusAttackFlat) ?? 0
         let percentAtkValue:Float = Float(self.bonusAttackPercent) ?? 0
+        let conversionRateValue:Float = Float(self.conversionRate) ?? 0
+        let conversionSourceValue:Float = Float(self.conversionSource) ?? 0
         
-        let totalAtkValue = (baseAtkValue * ((100 + percentAtkValue) / 100)) + flatAtkValue
+        let conversionValue = (conversionRateValue / 100) * conversionSourceValue
+        self.conversionTotal = Int(conversionValue)
+        
+        let totalAtkValue = (baseAtkValue * ((100 + percentAtkValue) / 100)) + flatAtkValue + conversionValue
         self.totalAtk = Int(totalAtkValue)
     }
     
